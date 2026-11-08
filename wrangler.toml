@@ -1,4 +1,4 @@
-name = "maxorion1-sports-kernel"
+name = "max-sports"
 main = "index.ts"
 compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]
@@ -21,4 +21,4 @@ class_name = "VectorStakeSession"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["VectorStakeSession"]
+new_sqlite_classes = ["VectorStakeSession"]
