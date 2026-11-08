@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { VectorStakeSession } from "./telemetrySession";
+import { StreamRateLimiter } from "./src/durableObjects/StreamRateLimiter";
 
 export interface Env {
   DB: D1Database;
