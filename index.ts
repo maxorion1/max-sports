@@ -25,12 +25,8 @@ export default {
     // 2. High-Frequency Telemetry WebSocket Routing
     if (url.pathname.startsWith("/api/telemetry/ws")) {
       const matchId = url.searchParams.get("match_id") || "global-default-match";
-
-      // Derive a unique, persistent Durable Object instance ID for the specific match
       const id = env.VECTOR_STAKE_SESSION.idFromName(matchId);
       const stub = env.VECTOR_STAKE_SESSION.get(id);
-
-      // Forward the WebSocket handshake request directly to the Durable Object
       return stub.fetch(request);
     }
 
@@ -41,12 +37,12 @@ export default {
       return stub.fetch(request);
     }
 
-    // 4. Fallback to Cloudflare Pages Static Assets (Frontend SPA & Wasm Bundle)
+    // 4. Fallback to Cloudflare Workers Static Assets (Frontend SPA & Wasm Bundle)
     return env.ASSETS
       ? env.ASSETS.fetch(request)
       : new Response("MAX-SPORTS maxorion1 Edge Active", { status: 200 });
   },
 };
 
-// Export the Durable Object class so the Cloudflare Worker runtime binds it
+// Export the Durable Object class so the Cloudflare Worker runtime binds it.
 export { VectorStakeSession };

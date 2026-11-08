@@ -7,6 +7,7 @@ routes = [
   { pattern = "sports.portal-os.com/*", zone_name = "portal-os.com" }
 ]
 
+# Bind the built frontend to env.ASSETS for the SPA/Wasm fallback route.
 [assets]
 directory = "./dist"
 binding = "ASSETS"
@@ -16,6 +17,7 @@ binding = "DB"
 database_name = "maxorion1_sports_db"
 database_id = "GLOBAL_MAXORION1_D1_ID" # Replace with the ID returned by `wrangler d1 create`.
 
+# Durable Object binding for telemetry WebSockets and vector stake state locks.
 [[durable_objects.bindings]]
 name = "VECTOR_STAKE_SESSION"
 class_name = "VectorStakeSession"
