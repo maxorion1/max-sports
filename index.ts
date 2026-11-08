@@ -1,8 +1,12 @@
+import { VectorStakeSession } from "./telemetrySession";
+
 export interface Env {
   DB: D1Database;
   VECTOR_STAKE_SESSION: DurableObjectNamespace;
   ASSETS?: Fetcher;
 }
+
+export { VectorStakeSession };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -18,6 +22,13 @@ export default {
       });
     }
 
+    if (url.pathname.startsWith("/api/telemetry/")) {
+      const matchId = url.searchParams.get("match_id") || "default-match";
+      const id = env.VECTOR_STAKE_SESSION.idFromName(`match:${matchId}`);
+      const stub = env.VECTOR_STAKE_SESSION.get(id);
+      return stub.fetch(request);
+    }
+
     if (url.pathname.startsWith("/api/stake")) {
       const id = env.VECTOR_STAKE_SESSION.idFromName("global-match-pool");
       const stub = env.VECTOR_STAKE_SESSION.get(id);
@@ -29,21 +40,3 @@ export default {
       : new Response("MAX-SPORTS maxorion1 Edge Active", { status: 200 });
   }
 };
-
-export class VectorStakeSession {
-  state: DurableObjectState;
-
-  constructor(state: DurableObjectState) {
-    this.state = state;
-  }
-
-  async fetch(_request: Request): Promise<Response> {
-    return new Response(JSON.stringify({
-      owner: "maxorion1",
-      state_lock: "EXECUTED",
-      latency: "<1ms"
-    }), {
-      headers: { "content-type": "application/json" }
-    });
-  }
-}
