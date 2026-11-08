@@ -4,7 +4,6 @@ compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
-# Bind the built frontend to env.ASSETS for the SPA/Wasm fallback route.
 [assets]
 directory = "./dist"
 binding = "ASSETS"
@@ -14,11 +13,18 @@ binding = "DB"
 database_name = "maxorion1_sports_db"
 database_id = "936da85c-59a0-461a-ba63-b448f5c64458"
 
-# Durable Object binding for telemetry WebSockets and vector stake state locks.
 [[durable_objects.bindings]]
 name = "VECTOR_STAKE_SESSION"
 class_name = "VectorStakeSession"
 
+[[durable_objects.bindings]]
+name = "STREAM_RATE_LIMITER"
+class_name = "StreamRateLimiter"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["VectorStakeSession"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["StreamRateLimiter"]
