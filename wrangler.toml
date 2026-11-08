@@ -1,0 +1,25 @@
+name = "maxorion1-sports-kernel"
+main = "index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "sports.portal-os.com/*", zone_name = "portal-os.com" }
+]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "maxorion1_sports_db"
+database_id = "GLOBAL_MAXORION1_D1_ID" # Replace with the ID returned by `wrangler d1 create`.
+
+[[durable_objects.bindings]]
+name = "VECTOR_STAKE_SESSION"
+class_name = "VectorStakeSession"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["VectorStakeSession"]
