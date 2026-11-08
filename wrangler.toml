@@ -4,10 +4,6 @@ compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
-# Build the Vite frontend before Wrangler uploads the static assets.
-[build]
-command = "bun run build"
-
 # Bind the built frontend to env.ASSETS for the SPA/Wasm fallback route.
 [assets]
 directory = "./dist"
