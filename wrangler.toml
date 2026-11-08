@@ -15,7 +15,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "maxorion1_sports_db"
-database_id = "GLOBAL_MAXORION1_D1_ID" # Replace with the ID returned by `wrangler d1 create`.
+database_id = "936da85c-59a0-461a-ba63-b448f5c64458"
 
 # Durable Object binding for telemetry WebSockets and vector stake state locks.
 [[durable_objects.bindings]]
