@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { useTelemetryStream } from "./hooks/useTelemetryStream";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { createXRStore, XR } from "@react-three/xr";
+import * as THREE from "three";
+import { useTelemetryStream, type PlayerTelemetry } from "./hooks/useTelemetryStream";
+
+const xrStore = createXRStore();
 
 type PortalTab = "live" | "stakes" | "manifesto";
 
@@ -8,17 +14,67 @@ const matches = [
   { id: "match_max_02", name: "Match #02: Quantum Showdown", objectId: "max_02" },
 ];
 
+function TelemetryField({ telemetry }: { telemetry: PlayerTelemetry[] }) {
+  return (
+    <group>
+      <gridHelper args={[50, 50, 0x06b6d4, 0x1e293b]} position={[0, -0.01, 0]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+        <planeGeometry args={[50, 50]} />
+        <meshStandardMaterial color="#020617" roughness={0.9} />
+      </mesh>
+
+      {telemetry.map((node) => {
+        const nodeColor = node.team === "offense" ? "#38bdf8" : "#fb7185";
+        const pressure = Math.min(1, Math.max(0, node.pressureLevel ?? 0.4));
+
+        return (
+          <group key={node.id} position={[node.x, 0.5, node.z]}>
+            <mesh>
+              <sphereGeometry args={[0.6, 32, 32]} />
+              <meshStandardMaterial
+                color={nodeColor}
+                emissive={nodeColor}
+                emissiveIntensity={0.6}
+                roughness={0.2}
+              />
+            </mesh>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.48, 0]}>
+              <ringGeometry args={[0.8, 1, 32]} />
+              <meshBasicMaterial
+                color={nodeColor}
+                side={THREE.DoubleSide}
+                transparent
+                opacity={pressure}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 export default function App() {
   const [selectedMatch, setSelectedMatch] = useState(matches[0].id);
   const [activeTab, setActiveTab] = useState<PortalTab>("live");
+  const [xrMessage, setXrMessage] = useState("");
   const { telemetry, connectionStatus } = useTelemetryStream({ matchId: selectedMatch });
   const isConnected = connectionStatus === "CONNECTED";
 
   const tabs: { id: PortalTab; label: string }[] = [
-    { id: "live", label: "Live Telemetry" },
+    { id: "live", label: "Live 3D Viewport" },
     { id: "stakes", label: "Vector Staking" },
     { id: "manifesto", label: "Sovereign Protocol" },
   ];
+
+  const enterVR = async () => {
+    setXrMessage("");
+    try {
+      await xrStore.enterVR();
+    } catch {
+      setXrMessage("Immersive VR is unavailable. Try a WebXR-compatible headset and browser over HTTPS.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 font-sans text-slate-100 selection:bg-cyan-500 selection:text-black">
@@ -59,11 +115,10 @@ export default function App() {
             </div>
             <button
               type="button"
-              disabled
-              title="Wallet connection is not available yet"
-              className="cursor-not-allowed rounded-lg bg-gradient-to-r from-cyan-700 to-indigo-700 px-4 py-2 text-sm font-bold text-white opacity-70"
+              onClick={enterVR}
+              className="rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:opacity-90"
             >
-              Wallet coming soon
+              Enter immersive VR
             </button>
           </div>
         </div>
@@ -74,11 +129,11 @@ export default function App() {
           <section aria-labelledby="live-heading" className="space-y-6">
             <div>
               <p className="mb-2 font-mono text-xs uppercase tracking-[0.25em] text-cyan-400">The game, in motion</p>
-              <h1 id="live-heading" className="text-3xl font-black tracking-tight sm:text-4xl">Live sports telemetry</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Follow player coordinates and live stream status. When a live feed is unavailable, the interface uses simulated telemetry.</p>
+              <h1 id="live-heading" className="text-3xl font-black tracking-tight sm:text-4xl">Live 3D sports telemetry</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Explore player positions in a browser-based 3D field or enter immersive VR on a supported WebXR device. Simulated telemetry appears when the live feed is unavailable.</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
               <aside className="space-y-6">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
                   <h2 className="mb-4 text-lg font-bold text-slate-200">Telemetry streams</h2>
@@ -105,56 +160,41 @@ export default function App() {
                 </div>
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
-                  <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Stream details</h2>
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
-                      <div className="text-lg font-black text-cyan-400">Live</div>
-                      <div className="mt-1 text-xs text-slate-500">Telemetry feed</div>
-                    </div>
-                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
-                      <div className="text-lg font-black text-indigo-400">Edge</div>
-                      <div className="mt-1 text-xs text-slate-500">Delivery network</div>
-                    </div>
-                  </div>
+                  <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Stream status</h2>
+                  <p className={`font-mono text-sm ${isConnected ? "text-emerald-400" : "text-amber-300"}`}>{connectionStatus.replaceAll("_", " ")}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Live data depends on the telemetry service. Fallback mode displays simulated player movement.</p>
                 </div>
               </aside>
 
-              <section className="flex min-h-[440px] flex-col rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl sm:p-6 lg:col-span-2" aria-labelledby="vector-heading">
-                <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+              <section className="flex h-[520px] flex-col rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl sm:h-[650px] lg:col-span-3" aria-labelledby="viewport-heading">
+                <div className="mb-3 flex items-center justify-between gap-3 px-2">
                   <div>
-                    <h2 id="vector-heading" className="text-xl font-bold">Spatial vector feed</h2>
-                    <p className="mt-1 text-xs text-slate-400">Player coordinates and movement metrics for the selected match.</p>
+                    <h2 id="viewport-heading" className="text-lg font-bold">Arcade 3D spatial viewport</h2>
+                    <p className="text-xs text-slate-400">Browser controls and WebXR headset support</p>
                   </div>
-                  <span className={`rounded-full border px-3 py-1 font-mono text-xs ${isConnected ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-200"}`}>
-                    {isConnected ? "CONNECTED" : connectionStatus.replaceAll("_", " ")}
-                  </span>
+                  <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 font-mono text-xs text-cyan-300">3D VIEW</span>
                 </div>
 
-                <div className="flex flex-1 flex-col justify-center overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-xs">
-                  {telemetry.length === 0 ? (
-                    <p className="py-12 text-center text-slate-500">Waiting for telemetry…</p>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      {telemetry.map((node) => (
-                        <article key={node.id} className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/90 p-4">
-                          <div className="flex items-center justify-between gap-2">
-                            <h3 className="text-sm font-bold text-cyan-300">{node.id}</h3>
-                            <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${node.team === "offense" ? "bg-indigo-500/20 text-indigo-300" : "bg-rose-500/20 text-rose-300"}`}>{node.team}</span>
-                          </div>
-                          <dl className="grid grid-cols-2 gap-2 text-slate-400">
-                            <div><dt className="inline">X: </dt><dd className="inline text-white">{node.x.toFixed(2)}</dd></div>
-                            <div><dt className="inline">Z: </dt><dd className="inline text-white">{node.z.toFixed(2)}</dd></div>
-                            <div><dt className="inline">Speed: </dt><dd className="inline text-white">{node.speed.toFixed(1)} m/s</dd></div>
-                            <div><dt className="inline">Pressure: </dt><dd className="inline text-cyan-400">{(node.pressureLevel * 100).toFixed(0)}%</dd></div>
-                          </dl>
-                        </article>
-                      ))}
+                <div className="relative flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+                  <Canvas camera={{ position: [0, 15, 20], fov: 50 }}>
+                    <XR store={xrStore}>
+                      <color attach="background" args={["#020617"]} />
+                      <ambientLight intensity={0.8} />
+                      <pointLight position={[10, 20, 10]} intensity={1.5} />
+                      <TelemetryField telemetry={telemetry} />
+                      <OrbitControls enablePan enableZoom maxPolarAngle={Math.PI / 2 - 0.05} />
+                    </XR>
+                  </Canvas>
+                  {telemetry.length === 0 && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/60 text-sm text-slate-300">
+                      Waiting for telemetry…
                     </div>
                   )}
                 </div>
-                <div className="mt-5 flex flex-wrap justify-between gap-2 text-xs text-slate-500">
+                {xrMessage && <p role="alert" className="mt-3 text-sm text-amber-300">{xrMessage}</p>}
+                <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs text-slate-500">
                   <span>Match ID: {selectedMatch}</span>
-                  <span>Live feed availability may vary.</span>
+                  <span>{telemetry.length} telemetry nodes</span>
                 </div>
               </section>
             </div>
@@ -165,7 +205,7 @@ export default function App() {
           <section aria-labelledby="stakes-heading" className="mx-auto max-w-2xl space-y-6 rounded-2xl border border-slate-800 bg-slate-900/80 p-6 text-center shadow-xl sm:p-8">
             <p className="font-mono text-xs uppercase tracking-[0.25em] text-cyan-400">Coming soon</p>
             <h1 id="stakes-heading" className="text-2xl font-black">Vector staking</h1>
-            <p className="text-sm leading-6 text-slate-400">Explore the concept of locking tactical predictions to match events. Wallet connection and staking transactions are not enabled in this preview.</p>
+            <p className="text-sm leading-6 text-slate-400">Wallet connection and staking transactions are not enabled in this preview.</p>
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-6">
               <div className="text-sm text-slate-500">STAKING</div>
               <div className="mt-1 text-xl font-black text-cyan-400">Preview only</div>
